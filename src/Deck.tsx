@@ -1,57 +1,78 @@
 import React, { Component } from "react";
 import axios from "axios";
 import "./Deck.css";
+import Card from "./Card";
+
+const API_BASE_URL = "https://deckofcardsapi.com/api/deck/";
+
+type DeckData = {
+  cards?: [];
+  deck_id?: string;
+  remaining?: number;
+  success?: boolean;
+};
+
+type CardData = {
+  code?: string;
+  image?: string;
+  name?: string;
+};
 
 type DeckProps = {};
 type DeckState = {
-  deckId: string;
-  cards: { cards: { image: string }[] }[];
+  deck: DeckData;
+  cards: CardData[];
 };
 
 class Deck extends Component<DeckProps, DeckState> {
   constructor(props: DeckProps) {
     super(props);
     this.state = {
-      deckId: "",
+      deck: {},
       cards: [],
     };
 
-    this.handleClick = this.handleClick.bind(this);
+    this.getCard = this.getCard.bind(this);
   }
 
-  async handleClick() {
-    if (this.state.deckId) {
-      const card = await axios.get(
-        `https://deckofcardsapi.com/api/deck/${this.state.deckId}/draw/`
-      );
-      console.log(card);
+  async getCard() {
+    let deck_id = this.state.deck.deck_id;
+    try {
+      let cardUrl = `${API_BASE_URL}${deck_id}/draw/`;
+      let cardRes = await axios.get(cardUrl);
+      if (!cardRes.data.success) throw new Error("No cards remaining!");
 
-      this.setState((st) => ({ cards: [...st.cards, card.data] }));
+      let cardData = cardRes.data.cards[0];
+      let newCard: CardData = {
+        code: cardData.code,
+        image: cardData.image,
+        name: `${cardData.value} of ${cardData.suit}`,
+      };
+
+      this.setState((st) => ({
+        cards: [...st.cards, newCard],
+      }));
+      console.log(cardRes.data);
+    } catch (error) {
+      console.log(error);
+      alert(error);
     }
   }
 
   async componentDidMount() {
-    const response = await axios.get(
-      "https://deckofcardsapi.com/api/deck/new/shuffle"
-    );
+    const response = await axios.get(`${API_BASE_URL}new/shuffle`);
     // console.log(response);
-    this.setState({ deckId: response.data.deck_id });
+    this.setState({ deck: response.data });
   }
 
   render() {
-    let isDisabled = this.state.cards.length === 52;
-    if (isDisabled) {
-      alert("No cards left!");
-    }
     return (
       <div>
         <h1>Deck card component</h1>
-        <button onClick={this.handleClick} disabled={isDisabled}>
-          New card
-        </button>
-        {this.state.cards.map((data, i) => (
-          <img key={i} src={data.cards[0].image} />
-        ))}
+        <button onClick={this.getCard}>New card</button>
+        {this.state.cards.map((card) => {
+          return <Card key={card.code} src={card.image} alt={card.name} />;
+        })}
       </div>
     );
   }
