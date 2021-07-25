@@ -37,11 +37,18 @@ class Deck extends Component<DeckProps, DeckState> {
     // console.log(response);
     this.setState({ deckId: response.data.deck_id });
   }
+
   render() {
+    let isDisabled = this.state.cards.length === 52;
+    if (isDisabled) {
+      alert("No cards left!");
+    }
     return (
       <div>
         <h1>Deck card component</h1>
-        <button onClick={this.handleClick}>New card</button>
+        <button onClick={this.handleClick} disabled={isDisabled}>
+          New card
+        </button>
         {this.state.cards.map((data, i) => (
           <img key={i} src={data.cards[0].image} />
         ))}
